@@ -46,6 +46,8 @@ pub mod arg;
 
 pub mod stdintf;
 
+pub mod tokio;
+
 /// Contains functionality for the "server" of a D-Bus object. A remote application can
 /// introspect this object and call methods on it.
 /// Deprecated - use the `tree` module instead.

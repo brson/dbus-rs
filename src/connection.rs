@@ -97,15 +97,15 @@ impl<'a> Iterator for ConnectionItems<'a> {
 /* Since we register callbacks with userdata pointers,
    we need to make sure the connection pointer does not move around.
    Hence this extra indirection. */
-struct IConnection {
+pub struct IConnection {
     conn: Cell<*mut ffi::DBusConnection>,
-    pending_items: RefCell<LinkedList<ConnectionItem>>,
+    pub pending_items: RefCell<LinkedList<ConnectionItem>>,
     watches: Option<Box<WatchList>>,
 }
 
 /// A D-Bus connection. Start here if you want to get on the D-Bus!
 pub struct Connection {
-    i: Box<IConnection>,
+    pub i: Box<IConnection>,
 }
 
 pub fn conn_handle(c: &Connection) -> *mut ffi::DBusConnection {
@@ -113,8 +113,7 @@ pub fn conn_handle(c: &Connection) -> *mut ffi::DBusConnection {
 }
 
 extern "C" fn filter_message_cb(conn: *mut ffi::DBusConnection, msg: *mut ffi::DBusMessage,
-    user_data: *mut c_void) -> ffi::DBusHandlerResult {
-
+                                user_data: *mut c_void) -> ffi::DBusHandlerResult {
     let m = super::message::message_from_ptr(msg, true);
     let i: &IConnection = unsafe { mem::transmute(user_data) };
     assert!(i.conn.get() == conn);
@@ -148,7 +147,7 @@ extern "C" fn object_path_message_cb(conn: *mut ffi::DBusConnection, msg: *mut f
 impl Connection {
 
     #[inline(always)]
-    fn conn(&self) -> *mut ffi::DBusConnection {
+    pub fn conn(&self) -> *mut ffi::DBusConnection {
         self.i.conn.get()
     }
 
