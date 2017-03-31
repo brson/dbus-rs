@@ -147,20 +147,26 @@ impl DBusDriver {
             match ci {
                 Some(ConnectionItem::MethodCall(msg)) => {
                     // TODO respond to _incoming_ method call request?
-                    panic!()
-                }
+                    panic!("got a method call, don't know what to do")
+                },
                 Some(ConnectionItem::MethodReturn(msg)) => {
                     let serial = msg.get_reply_serial().expect("method reply has no reply serial");
+
                     // FIXME: error handling
                     if let Some(tx) = self.call_handlers.remove(&serial) {
-                        tx.send(msg).unwrap();
+                        let send_op = tx.send(msg);
+                        match send_op {
+                            Ok(_) => (),
+                            Err(e) => { println!("ERROR: {:?}", e); }
+                        }
                     } else {
                         println!("unexpected dbus method return serial {}", serial);
                     }
-                }
+                },
                 Some(ConnectionItem::Signal(_)) => {
                     // TODO what do?
-                }
+                    println!("got a signal, don't know what to do")
+                },
                 Some(ConnectionItem::WatchFd(_)) => (),
                 Some(ConnectionItem::Nothing) => (),
                 None => break,
@@ -268,9 +274,16 @@ impl<T> Future for MethodCall<T>
         match self.0.poll().expect("unexpected dbus IPC cancellation") {
             Async::Ready(res) => {
                 let res: Message = res;
-                // FIXME errors
-                let res = res.get1::<T>().unwrap();
-                Ok(Async::Ready(res))
+
+                let res = res.get1::<T>();
+
+                match res {
+                    Some(r) => Ok(Async::Ready(r)),
+                    None => {
+                        println!("failed to get process the response from the method call");
+                        Err(())
+                    }
+                }
             }
             Async::NotReady => Ok(Async::NotReady)
         }
